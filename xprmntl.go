@@ -3,8 +3,11 @@ package xprmntl
 import (
 	"fmt"
 	"os"
-	"github.com/franela/goreq"
-	"time"
+	"net/http"
+//	"time"
+	"encoding/json"
+	"bytes"
+	"io/ioutil"
 //	"errors"
 )
 
@@ -18,7 +21,6 @@ type Experiment struct {
 }
 
 func NewExperiment(name string) (Experiment) {
-//	if len(name) == 0 { return Experiment{"", "", false}, errors.New("No experiment name defined.") };
 	return Experiment{name, "", false};
 }
 
@@ -28,9 +30,6 @@ func NewExperimentsList(experiments ...interface {}) ([]Experiment) {
 		switch experiments[i].(type) {
 			case string: {
 				experiment := NewExperiment(experiments[i].(string));
-//				if err != nil {
-//					return []Experiment {}, errors.New("");
-//				}
 				list = append(list, experiment);
 			}
 			case Experiment: {
@@ -57,7 +56,6 @@ func NullSharedConfig() (SharedConfig) {
 }
 
 func NewSharedConfig(devKey string) (SharedConfig) {
-//	if len(devKey) == 0 { return nil, errors.New("No devKey defined."); }
 	return SharedConfig{devKey, []Experiment{}};
 }
 /**
@@ -70,17 +68,16 @@ func NewSharedConfig(devKey string) (SharedConfig) {
 type FeatureConfig struct {
 	devKey string;
 	featureURL string;
-	timeout int64;
-	Experiments []Experiment `json:"experiments"`;
-	Shared *SharedConfig `json:"shared"`;
+	timeout int;
+	experiments []Experiment `json:"experiments"`;
+	shared SharedConfig `json:"shared"`;
 }
 
 /**
  FeatureConfig: Constructors
  */
 func NewFeatureConfig(experiments []Experiment) (FeatureConfig){
-//	if len(experiments) == 0 { return nil, errors.New("Cannot register experiments without `experiments`. Please see the docs")};
-	return FeatureConfig{os.Getenv("FEATURE_DEVKEY"), os.Getenv("FEATURE_URL"), 30000, experiments, nil};
+	return FeatureConfig{os.Getenv("FEATURE_DEVKEY"), os.Getenv("FEATURE_URL"), 30000, experiments, NullSharedConfig()};
 }
 
 /**
@@ -94,8 +91,16 @@ func (c FeatureConfig) getFeatureURL() string {
 	return c.featureURL;
 };
 
-func (c FeatureConfig) getTimeout() int64 {
+func (c FeatureConfig) getTimeout() int {
 	return c.timeout;
+};
+
+func (c FeatureConfig) getExperiments() []Experiment {
+	return c.experiments;
+};
+
+func (c FeatureConfig) getSharedConfig() SharedConfig {
+	return c.shared;
 };
 
 /**
@@ -108,16 +113,19 @@ func (c FeatureConfig) getTimeout() int64 {
 type FeatureClient struct {
 	DevKey string `json:"devKey"`;
 	FeatureURL string `json:"featureUrl"`;
-	Timeout int64 `json:"timeout"`;
-	Config FeatureConfig `json:"config"`;
+	Timeout int `json:"timeout"`;
+	Experiments []Experiment `json:"experiments"`;
+	Shared SharedConfig `json:"shared"`;
 }
 /**
  FeatureClient: Constructors
  */
 func New(config FeatureConfig) (FeatureClient) {
-	devKey     := config.getDevKey();
-	featureURL := config.getFeatureURL();
-	timeout    := config.getTimeout();
+	devKey       := config.getDevKey();
+	featureURL   := config.getFeatureURL();
+	timeout      := config.getTimeout();
+	experiments  := config.getExperiments();
+	sharedConfig := config.getSharedConfig();
 
 	if len(devKey) == 0 {
 		devKey = os.Getenv("FEATURE_DEVKEY");
@@ -125,33 +133,66 @@ func New(config FeatureConfig) (FeatureClient) {
 	if len(featureURL) == 0 {
 		devKey = os.Getenv("FEATURE_URL")
 	}
-
-//	if len(devKey) == 0 {
-//		return nil, errors.New("");
-//	}
-//	if len(featureURL) == 0 {
-//		return nil, errors.New("");
-//	}
-	return FeatureClient{devKey, featureURL, timeout, config};
+	return FeatureClient{devKey, featureURL, timeout, experiments, sharedConfig};
 }
 
 /**
  FeatureClient: Utility
  */
-func (c FeatureClient) Announce() {
+func (c FeatureClient) Announce() App {
 	url := c.FeatureURL + "api/coupling/";
-	var timeout time.Duration = time.Duration(c.Timeout) * time.Millisecond;
-	req := goreq.Request{
-		Method: "POST",
-		Uri: url,
-		Body: c,
-		Timeout: timeout}
-	req.AddHeader("x-feature-key", c.DevKey);
-	res, err := req.Do();
-	fmt.Println(res);
-	fmt.Println(err);
-	return;
+//	var timeout time.Duration = time.Duration(c.Timeout) * time.Millisecond;
+	jsonBody, err := json.Marshal(c);
+	if err != nil {
+		fmt.Println("There was an Error");
+	}
+	client := &http.Client{}
+
+	req, reqErr := http.NewRequest("POST", url, bytes.NewReader(jsonBody));
+	req.Header.Add("x-feature-key", c.DevKey);
+	req.Header.Add("Content-Type", "application/json");
+	if reqErr != nil {
+		fmt.Println("There was an Error");
+	}
+	res, resErr := client.Do(req);
+	defer res.Body.Close();
+	body, bodyReadErr := ioutil.ReadAll(res.Body);
+	if resErr != nil {
+		fmt.Println("There was an Error");
+	}
+	if bodyReadErr != nil {
+		fmt.Println("There was an Error");
+	}
+
+	var response FeatureClientResponse;
+//	fmt.Println(string(body[:]))
+	marshalErr := json.Unmarshal(body, &response);
+	if marshalErr != nil {
+		fmt.Println("json.Unmarshal ERROR");
+	}
+	return response.App;
 }
+/**
+ END STRUCT
+ */
+
+
+/**
+ RESPONSE OBJECTS
+ */
+/**
+ STRUCT: FeatureClientResponse
+ */
+type FeatureClientResponse struct {
+	App App
+}
+
+type App struct {
+	Groups interface {};
+	Experiments map[string]interface {};
+	Envs interface {};
+}
+
 /**
  END STRUCT
  */
