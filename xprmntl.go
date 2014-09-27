@@ -117,22 +117,76 @@ type FeatureClient struct {
 	Experiments []Experiment `json:"experiments"`;
 	Shared SharedConfig `json:"shared"`;
 }
+
+func experimentsListHandler(rawExperiments []interface {}) []Experiment {
+	var experiments []Experiment;
+
+	for i := 0; i < len(rawExperiments); i++ {
+		switch rawExperiments[i].(type) {
+		case string: {
+			experiments = append(experiments, NewExperiment(rawExperiments[i].(string)));
+		}
+		case map[string]interface {}: {
+			if rawExperiments[i].(map[string]interface{})["name"] == nil { fmt.Println("ERORR"); }
+			var description string;
+			var expDefault bool;
+			if rawExperiments[i].(map[string]interface{})["description"] != nil {
+				description = rawExperiments[i].(map[string]interface{})["description"].(string);
+			} else {
+				description = "";
+			}
+			if rawExperiments[i].(map[string]interface{})["default"] != nil {
+				expDefault = rawExperiments[i].(map[string]interface{})["default"].(bool);
+			}
+			experiments = append(experiments, Experiment{rawExperiments[i].(map[string]interface{})["name"].(string), description, expDefault});
+		}
+		}
+	}
+
+	return experiments;
+}
 /**
  FeatureClient: Constructors
  */
-func New(config FeatureConfig) (FeatureClient) {
-	devKey       := config.getDevKey();
-	featureURL   := config.getFeatureURL();
-	timeout      := config.getTimeout();
-	experiments  := config.getExperiments();
-	sharedConfig := config.getSharedConfig();
+func New(config map[string]interface {}) (FeatureClient) {
+	var devKey, featureURL string;
+	var timeout int;
 
-	if len(devKey) == 0 {
+	rawDevKey       := config["devKey"]
+	rawFeatureURL   := config["featureUrl"]
+//	rawTimeout      := config["timeout"].(int);
+	rawExperiments  := config["experiments"].([]interface {});
+	rawSharedConfig := config["shared"];
+
+	if rawDevKey == nil {
 		devKey = os.Getenv("FEATURE_DEVKEY");
+	} else {
+		devKey = config["devKey"].(string);
 	}
-	if len(featureURL) == 0 {
-		devKey = os.Getenv("FEATURE_URL")
+	if rawFeatureURL == nil {
+		featureURL = os.Getenv("FEATURE_URL")
+	} else {
+		featureURL = config["featureUrl"].(string);
 	}
+
+	// Handle array of varried experiments
+	var experiments []Experiment;
+	if rawExperiments != nil {
+		experiments = experimentsListHandler(rawExperiments);
+	}
+
+	// Handle shared map
+	var sharedConfig SharedConfig;
+	if rawSharedConfig != nil {
+		if (rawSharedConfig.(map[string]interface {})["devKey"] == nil ||
+			 rawSharedConfig.(map[string]interface {})["experiments"] == nil ||
+			 len(rawSharedConfig.(map[string]interface {})["experiments"].([]interface {})) == 0 ) {
+			 fmt.Println("THERE WAS AN ERROR");
+			 }
+		sharedConfig = SharedConfig{ DevKey      : rawSharedConfig.(map[string]interface {})["devKey"].(string),
+																 Experiments : rawSharedConfig.(map[string]interface {})["experiments"].([]Experiment)};
+	}
+
 	return FeatureClient{devKey, featureURL, timeout, experiments, sharedConfig};
 }
 
