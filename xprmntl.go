@@ -1,3 +1,4 @@
+// feature-client.go is a client implementation of the XPRMNTL service
 package xprmntl
 
 import (
