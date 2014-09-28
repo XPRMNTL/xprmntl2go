@@ -67,13 +67,13 @@ type Config struct {
 	Shared      *Config `json:"shared"`;
 }
 ```
-- `featureUrl`
+- `FeatureURL`
   - this is the URL to the XPRMNTL dashboard.
   - Defaults to `os.Getenv("FEATURE_URL")`.
-- `devKey`
+- `DevKey`
   - this is the devKey generated for you by the XPRMNTL dashboard.
   - Defaults to `os.Getenv("FEATURE_DEVKEY")`
-- `experiments`
+- `Experiments`
   - This is an array of all of your app-level experiments. This must be an Experiment object:
 ```go
 type Experiment struct {
@@ -82,11 +82,11 @@ type Experiment struct {
 	ExpDefault bool    `json:"default"`;
 }
 ```
-- `timeout`
+- `Timeout`
   - This is the number of milliseconds after which the request should time out.
   - Must be set to a non-zero value
   - Defaults to 5000 (5s)
-- `shared`
+- `Shared`
   - This object allows you to configure and accept configuration for a shared set of experiments. If, for example, you have a separate set of experiments for your site-wide theme, you would configure those here, shared among your applications.
   - This also must be a Config object (NOTE: only the DevKey and the Experiments array will be used here)
 
