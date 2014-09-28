@@ -17,9 +17,9 @@ import (
  STRUCT: Experiment
  */
 type Experiment struct {
-	Name string `json:"name"`;
+	Name string        `json:"name"`;
 	Description string `json:"description"`;
-	ExpDefault bool `json:"default"`;
+	ExpDefault bool    `json:"default"`;
 }
 
 /**
