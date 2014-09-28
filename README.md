@@ -1,6 +1,6 @@
 [![XPRMNTL](https://raw.githubusercontent.com/XPRMNTL/XPRMNTL.github.io/master/images/ghLogo.png)](https://github.com/XPRMNTL/XPRMNTL.github.io)
-# Feature-Client.js
-[![Build Status](https://travis-ci.org/jshcrowthe/xprmntl.svg?branch=master)](https://travis-ci.org/XPRMNTL/feature-client.js) [![NPM version](https://img.shields.io/npm/v/feature-client.svg)](https://www.npmjs.org/package/feature-client)
+# xprmntl.go
+[![Build Status](https://travis-ci.org/jshcrowthe/xprmntl.svg?branch=master)](https://travis-ci.org/XPRMNTL/feature-client.js)
 
 This is a GoLang library for the consumption of [XPRMNTL](https://github.com/XPRMNTL/feature) product.
 
