@@ -1,5 +1,5 @@
 [![XPRMNTL](https://raw.githubusercontent.com/XPRMNTL/XPRMNTL.github.io/master/images/ghLogo.png)](https://github.com/XPRMNTL/XPRMNTL.github.io)
-# xprmntl.go
+# go-feature-client
 [![Build Status](https://travis-ci.org/jshcrowthe/xprmntl.svg?branch=master)](https://travis-ci.org/XPRMNTL/feature-client.js)
 
 This is a GoLang library for the consumption of [XPRMNTL](https://github.com/XPRMNTL/feature) product.
