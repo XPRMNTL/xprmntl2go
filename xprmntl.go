@@ -3,12 +3,12 @@ package xprmntl
 import (
 	"fmt"
 	"net/http"
-//	"time"
 	"encoding/json"
 	"bytes"
 	"io/ioutil"
 	"errors"
 	"os"
+	"time"
 )
 /**
  REQUEST OBJECTS
@@ -60,17 +60,20 @@ func (c Config) getSharedConfig() *Config {
  STRUCT: FeatureClient
  */
 type FeatureClient struct {
-	DevKey      *string       `json:"devKey"`;
-	FeatureURL  *string       `json:"featureUrl"`;
-	Timeout     int           `json:"timeout"`;
-	Experiments *[]Experiment `json:"experiments"`;
-	Shared      *Config `json:"shared"`;
+	DevKey       *string       `json:"devKey"`;
+	FeatureURL   *string       `json:"featureUrl"`;
+	Timeout      int           `json:"timeout"`;
+	Experiments  *[]Experiment `json:"experiments"`;
+	Shared       *Config       `json:"shared"`;
 }
 
 /**
  FeatureClient: Constructors
  */
-func New(config Config) (*FeatureClient, error) {
+func New(config *Config) (*FeatureClient, error) {
+	if config == nil {
+		return nil, errors.New("XPRMNTL: New(): Cannot register experiments without a config. Please see docs.");
+	}
 	devKey      := config.getDevKey();
 	featureURL  := config.getFeatureURL();
 	timeout     := config.getTimeout();
@@ -80,7 +83,7 @@ func New(config Config) (*FeatureClient, error) {
 	if devKey == nil || len(*devKey) == 0 {
 		envKey := os.Getenv("FEATURE_DEVKEY");
 		if len(envKey) == 0 {
-			return nil, errors.New("XPRMNTL: New(): XPRMNTL requires a devKey to be set");
+			return nil, errors.New("XPRMNTL: New(): No devKey defined.");
 		}
 		devKey = &envKey;
 	}
@@ -88,9 +91,25 @@ func New(config Config) (*FeatureClient, error) {
 	if featureURL == nil || len(*featureURL) == 0 {
 		envUrl := os.Getenv("FEATURE_URL");
 		if len(envUrl) == 0 {
-			return nil, errors.New("XPRMNTL: New(): XPRMNTL requires a featureUrl to be set");
+			return nil, errors.New("XPRMNTL: New(): No featureUrl defined.");
 		}
 		featureURL = &envUrl;
+	}
+
+	if timeout == 0 {
+		timeout = 5000;
+	}
+
+	if shared == nil {
+		sharedKey := os.Getenv("FEATURE_DEVKEY_SHARED");
+		if len(sharedKey) > 0 {
+			sharedConfig := Config{ DevKey: sharedKey };
+			shared = &sharedConfig;
+		}
+	}
+
+	if experiments == nil || len(*experiments) == 0 {
+		return nil, errors.New("XPRMNTL: New(): Cannot register experiments without `experiments`. Please see the docs.")
 	}
 
 	return &FeatureClient{devKey, featureURL, timeout, experiments, shared}, nil;
@@ -99,21 +118,24 @@ func New(config Config) (*FeatureClient, error) {
 /**
  FeatureClient: Utility
  */
+
 func (c FeatureClient) Announce() (*AppConfig, error) {
 	url := *c.FeatureURL + "/api/coupling/";
-//	var timeout time.Duration = time.Duration(c.Timeout) * time.Millisecond;
+	var timeout time.Duration = time.Duration(c.Timeout) * time.Millisecond;
 	jsonBody, jsonErr := json.Marshal(c);
 	if jsonErr != nil {
+		fmt.Println(jsonErr);
 		return nil, errors.New("XPRMNTL: Announce(): There was an error building your JSON")
-	} else {
-		fmt.Println(string(jsonBody[:]))
 	}
-	client := &http.Client{}
+	client := &http.Client{
+		Timeout: timeout,
+	}
 
 	req, reqErr := http.NewRequest("POST", url, bytes.NewReader(jsonBody));
 	req.Header.Add("x-feature-key", *c.DevKey);
 	req.Header.Add("Content-Type", "application/json");
 	if reqErr != nil {
+		fmt.Println(reqErr);
 		return nil, errors.New("XPRMNTL: Announce(): There was an error in your request")
 	}
 	res, resErr := client.Do(req);
@@ -129,12 +151,14 @@ func (c FeatureClient) Announce() (*AppConfig, error) {
 	body, bodyReadErr := ioutil.ReadAll(res.Body);
 	defer res.Body.Close();
 	if bodyReadErr != nil {
+		fmt.Println(bodyReadErr);
 		return nil, errors.New("XPRMNTL: Announce(): There was an error in reading the server response body")
 	}
 
 	var response FeatureClientResponse;
 	marshalErr := json.Unmarshal(body, &response);
 	if marshalErr != nil {
+		fmt.Println(marshalErr);
 		return nil, errors.New("XPRMNTL: (function) Announce: There was an error in parsing the JSON response")
 	}
 	return &response.App, nil;
@@ -162,3 +186,5 @@ type AppConfig struct {
 	Experiments map[string]interface {};
 	Envs interface {};
 }
+
+
