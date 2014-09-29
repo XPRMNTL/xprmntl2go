@@ -7,53 +7,69 @@ This is a GoLang library for the consumption of [XPRMNTL](https://github.com/XPR
 ```go
 package main
 
-import . "github.com/xprmntl/xprmntl"
+import . "github.com/xprmntl/xprmntl2go"
 
 func main() {
 	config := xprmntl.Config {
-  		Experiments: []xprmntl.Experiment{
-  			xprmntl.Experiment{
-          Name: "experimentName",
-          Description: "Experiment Description",
-          ExpDefault: true
-  			},
-  		},
-  		Shared: &xprmntl.Config {
-  			DevKey: "testDevKey",
-  			Experiments: []xprmntl.Experiment{
-  				xprmntl.Experiment{Name: "Big Scary Experiment"},
-  			},
-  		},
-  	};
-  cli, cliErr := xprmntl.New(&config);
-  if cliErr != nil {
-  		fmt.Println(cliErr);
-  		return;
-  	}
-  
-  experiments, err := cli.Announce();
-  if err != nil {
-    fmt.Println(err);
-    return;
-  }
-  
-  if experiments.isSet("experimentName") {
-    // Feature Specific Code
-  }
+		Experiments: []xprmntl.Experiment{
+			xprmntl.Experiment{Name: "TestExp"},
+		},
+		Shared: &xprmntl.Config {
+			DevKey: "testDevKey",
+			Experiments: []xprmntl.Experiment{
+				xprmntl.Experiment{Name: "SharedTestExp"},
+			},
+		},
+	};
+	cli, cliErr := xprmntl.New(&config);
+
+	if cliErr != nil {
+		fmt.Println(cliErr);
+		return;
+	}
+
+	experiments, err := cli.Announce();
+	if err != nil {
+		fmt.Println(err);
+		return;
+	}
+	handler := func(w http.ResponseWriter, req *http.Request) {
+		// Initialize the experiments object
+		experiments.Initialize(req, &w);
+		
+		if experiments.IsSet("TestExp") {
+			// Execute body if experiment is set
+		}
+		
+		t.Execute(w, experiments);
+	};
+
+  http.HandleFunc("/", handler)
+  http.ListenAndServe(":8080", nil)
+}
+```
+Template Implementation
+```html
+{{ if .IsSet "TestExp"  }}
+<h2>Big Exp</h2>
+<p>The experiment 'Big Exp' is on</p>
+<img src="http://lorempixel.com/400/400" />
+{{ end }}
 ```
 
 ### Installation and Importing
 ```sh
-$ go get github.com/jshcrowthe/xprmntl
+$ go get github.com/xprmntl/xprmntl2go
 ```
 
 ```go
 import (
-  . "github.com/jshcrowthe/xprmntl"
+  . "github.com/xprmntl/xprmntl2go"
 )
 ```
 
 ### Usage
+After importing the package the functions are accesible under the `xprmntl` namespace. 
 
 
 ### Configuration
