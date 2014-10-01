@@ -1,5 +1,5 @@
 // feature-client.go is a client implementation of the XPRMNTL service
-package xprmntl
+package xprmntl2go
 
 import (
 	"fmt"
@@ -34,7 +34,7 @@ type Config struct {
 	FeatureURL  string;
 	Timeout     int;
 	Reference   string       `json:"reference"`;
-	Experiments []Experiment `json:"experiments"`;
+	Experiments []*Experiment `json:"experiments"`;
 	Shared      *Config      `json:"shared"`;
 }
 
@@ -57,8 +57,8 @@ func (c *Config) getReference() *string {
 	return &c.Reference;
 };
 
-func (c *Config) getExperiments() *[]Experiment {
-	return &c.Experiments;
+func (c *Config) getExperiments() []*Experiment {
+	return c.Experiments;
 };
 
 func (c *Config) getSharedConfig() *Config {
@@ -73,7 +73,7 @@ type FeatureClient struct {
 	FeatureURL   *string       `json:"featureUrl"`;
 	Timeout      int           `json:"timeout"`;
 	Reference    *string       `json:"reference"`;
-	Experiments  *[]Experiment `json:"experiments"`;
+	Experiments  []*Experiment `json:"experiments"`;
 	Shared       *Config       `json:"shared"`;
 }
 
@@ -119,7 +119,7 @@ func New(config *Config) (*FeatureClient, error) {
 		}
 	}
 
-	if experiments == nil || len(*experiments) == 0 {
+	if experiments == nil || len(experiments) == 0 {
 		return nil, errors.New("XPRMNTL: New(): Cannot register experiments without `experiments`. Please see the docs.")
 	}
 
@@ -129,13 +129,23 @@ func New(config *Config) (*FeatureClient, error) {
 /**
  FeatureClient: Utility
  */
+func (c *FeatureClient) getExp(name string) *Experiment {
+	for i := 0; i < len(c.Experiments); i++ {
+		if c.Experiments[i].Name == name { return c.Experiments[i]; }
+	}
+	return nil;
+}
+
 func (c *FeatureClient) Announce() (*AppConfig, error) {
+	var response FeatureClientResponse;
+	response.App.SetDefault(c);
+
 	url := *c.FeatureURL + "/api/coupling/";
 	var timeout time.Duration = time.Duration(c.Timeout) * time.Millisecond;
 	jsonBody, jsonErr := json.Marshal(c);
 	if jsonErr != nil {
 		fmt.Println(jsonErr);
-		return nil, errors.New("XPRMNTL: Announce(): There was an error building your JSON")
+		return &response.App, errors.New("XPRMNTL: Announce(): There was an error building your JSON")
 	}
 
 	client := &http.Client{
@@ -145,7 +155,7 @@ func (c *FeatureClient) Announce() (*AppConfig, error) {
 	req, reqErr := http.NewRequest("POST", url, bytes.NewReader(jsonBody));
 	if reqErr != nil {
 		fmt.Println(reqErr);
-		return nil, errors.New("XPRMNTL: Announce(): There was an error in your request");
+		return &response.App, errors.New("XPRMNTL: Announce(): There was an error in your request");
 	}
 
 	req.Header.Add("x-feature-key", *c.DevKey);
@@ -155,27 +165,25 @@ func (c *FeatureClient) Announce() (*AppConfig, error) {
 	res, resErr := client.Do(req);
 	if resErr != nil {
 		fmt.Println(resErr);
-		return nil, errors.New("XPRMNTL: Announce(): There was an error in the server response")
+		return &response.App, errors.New("XPRMNTL: Announce(): There was an error in the server response")
 	}
 	
 	if (res.StatusCode != 200) {
 		fmt.Println(res);
-		return nil, errors.New("XPRMNTL: Announce(): Server return a non-200 response");
+		return &response.App, errors.New("XPRMNTL: Announce(): Server return a non-200 response");
 	}
 	body, bodyReadErr := ioutil.ReadAll(res.Body);
 	defer res.Body.Close();
 	if bodyReadErr != nil {
 		fmt.Println(bodyReadErr);
-		return nil, errors.New("XPRMNTL: Announce(): There was an error in reading the server response body")
+		return &response.App, errors.New("XPRMNTL: Announce(): There was an error in reading the server response body")
 	}
-	var response FeatureClientResponse;
 	marshalErr := json.Unmarshal(body, &response);
 	if marshalErr != nil {
 		fmt.Println(marshalErr);
-		return nil, errors.New("XPRMNTL: (function) Announce: There was an error in parsing the JSON response")
+		return &response.App, errors.New("XPRMNTL: (function) Announce: There was an error in parsing the JSON response")
 	}
 	response.App.SetReference(c.Reference);
-	response.App.SetDefault(c);
 	return &response.App, nil;
 }
 /**
@@ -211,7 +219,7 @@ func (app *AppConfig) SetReference(reference *string) {
 func (app *AppConfig) SetDefault(config *FeatureClient) {
 	app.Default = config;
 }
-func (app *AppConfig) Initialize(req *http.Request, w *http.ResponseWriter) {
+func (app *AppConfig) Initialize(w *http.ResponseWriter, req *http.Request) {
 	app.req = req;
 	app.resWriter = w;
 }
@@ -241,6 +249,10 @@ func (app *AppConfig) IsSet(experimentName string) bool {
 				fmt.Println(reflect.TypeOf(app.Experiments[experimentName]));
 			}
 		}
+	}
+	expDefault := app.Default.getExp(experimentName);
+	if expDefault != nil {
+		return expDefault.ExpDefault;
 	}
 	// TODO: Setup function to check the Default config for experiment before returning false
 	return false;

@@ -1,4 +1,4 @@
-package xprmntl
+package xprmntl2go
 
 import (
 	"errors"
@@ -35,7 +35,7 @@ func TestNew(t * testing.T) {
 				});
 			g.Describe("Given no experiments in array", func() {
 					g.It("should reject with an Error", func() {
-							config := Config{Experiments: []Experiment{}};
+							config := Config{Experiments: []*Experiment{}};
 							cli, err := New(&config);
 							Expect(cli).Should(BeNil());
 							Expect(err).Should(Equal(errors.New("XPRMNTL: New(): Cannot register experiments without `experiments`. Please see the docs.")));
@@ -44,8 +44,8 @@ func TestNew(t * testing.T) {
 			g.Describe("Given no optional Configurations", func() {
 					g.It("should fall back to ENV", func() {
 							config := Config {
-							Experiments: []Experiment {
-								Experiment{Name: "testEx"},
+							Experiments: []*Experiment {
+								&Experiment{Name: "testEx"},
 							},
 						};
 							cli, err := New(&config);
@@ -60,8 +60,8 @@ func TestNew(t * testing.T) {
 							config := Config {
 							DevKey: "new-dev-key-here",
 							FeatureURL: "https://example.com/",
-							Experiments: []Experiment {
-								Experiment{Name: "testEx"},
+							Experiments: []*Experiment {
+								&Experiment{Name: "testEx"},
 							},
 						};
 							cli, err := New(&config);
@@ -75,8 +75,8 @@ func TestNew(t * testing.T) {
 							config := Config {
 							DevKey: "new-dev-key-here",
 							FeatureURL: "https://example.com/",
-							Experiments: []Experiment {
-							Experiment{Name: "testEx"},
+							Experiments: []*Experiment {
+							&Experiment{Name: "testEx"},
 						},
 						};
 							cli, err := New(&config);

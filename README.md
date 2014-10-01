@@ -10,18 +10,18 @@ package main
 import . "github.com/xprmntl/xprmntl2go"
 
 func main() {
-	config := xprmntl.Config {
-		Experiments: []xprmntl.Experiment{
-			xprmntl.Experiment{Name: "TestExp"},
+	config := xprmntl2go.Config {
+		Experiments: []*xprmntl2go.Experiment{
+			&xprmntl2go.Experiment{Name: "TestExp"},
 		},
-		Shared: &xprmntl.Config {
+		Shared: &xprmntl2go.Config {
 			DevKey: "testDevKey",
-			Experiments: []xprmntl.Experiment{
-				xprmntl.Experiment{Name: "SharedTestExp"},
+			Experiments: []*xprmntl2go.Experiment{
+				&xprmntl2go.Experiment{Name: "SharedTestExp"},
 			},
 		},
 	};
-	cli, cliErr := xprmntl.New(&config);
+	cli, cliErr := xprmntl2go.New(&config);
 
 	if cliErr != nil {
 		fmt.Println(cliErr);
@@ -31,30 +31,21 @@ func main() {
 	experiments, err := cli.Announce();
 	if err != nil {
 		fmt.Println(err);
-		return;
 	}
+
 	handler := func(w http.ResponseWriter, req *http.Request) {
 		// Initialize the experiments object
 		experiments.Initialize(req, &w);
-		
+
 		if experiments.IsSet("TestExp") {
 			// Execute body if experiment is set
 		}
-		
-		t.Execute(w, experiments);
 	};
 
-  http.HandleFunc("/", handler)
-  http.ListenAndServe(":8080", nil)
+	http.HandleFunc("/", handler)
+	http.ListenAndServe(":8080", nil)
 }
-```
-Template Implementation
-```html
-{{ if .IsSet "TestExp"  }}
-<h2>Big Exp</h2>
-<p>The experiment 'Big Exp' is on</p>
-<img src="http://lorempixel.com/400/400" />
-{{ end }}
+
 ```
 
 ### Installation and Importing
@@ -67,10 +58,6 @@ import (
   . "github.com/xprmntl/xprmntl2go"
 )
 ```
-
-### Usage
-After importing the package the functions are accesible under the `xprmntl` namespace. 
-
 
 ### Configuration
 Config Object:
@@ -103,11 +90,54 @@ type Experiment struct {
   - Must be set to a non-zero value
   - Defaults to 5000 (5s)
 - `Shared`
-  - This object allows you to configure and accept configuration for a shared set of experiments. If, for example, you have a separate set of experiments for your site-wide theme, you would configure those here, shared among your applications.
+  - This object allows you to configure and accept configuration for a shared set of experiments. If, for example, 
+  you have a separate set of experiments for your site-wide theme, you would configure those here, 
+  shared among your applications.
   - This also must be a Config object (NOTE: only the DevKey and the Experiments array will be used here)
 
 ### Announcement
-This step preforms the fetching of the configuration against the XPRMNTL dashboard. Any new experiments get registered and default either to `false` or to whatever you've set as your `default` for that experiment.
+This step preforms the fetching of the configuration against the XPRMNTL dashboard. It is a feature of the 
+`xprmntl2go.FeatureClient` object Any new experiments are registered and default either to `false` or to whatever 
+you've set as your `default` for that experiment. If there are any errors in the Announcement the second return value
+ of this will contain the error whilst the first will contain an `xprmntl2go.AppConfig` that contains the config 
+ defaults
 ```go
-
+experiments, err := cli.Announce();
+if err != nil {
+  fmt.Println(err);
+}
 ```
+
+### Initialization
+In order to utilize the groups and buckets features of the feature dashboard you must initialize the app with the 
+response writer and req object. If you don't intend to use those features you can skip this step.
+ ```go
+handler := func(w http.ResponseWriter, req *http.Request) {
+  // Initialize the experiments object
+  experiments.Initialize(&w, req);
+};
+ ```
+ 
+### Usage
+#### Server Usage:
+```go
+handler := func(w http.ResponseWriter, req *http.Request) {
+  // Initialize the experiments object
+  experiments.Initialize(&w, req);
+  
+  if experiments.IsSet("TestExp") {
+    // Execute Code is TestExp is active
+  } else {
+    // Execute Code if TestExp is inactive
+  }
+};
+```
+#### Template Usage: 
+```html
+{{ if .IsSet "TestExp"  }}
+<h2>Big Exp</h2>
+<p>The experiment 'Big Exp' is on</p>
+<img src="http://lorempixel.com/400/400" />
+{{ end }}
+```
+ 
