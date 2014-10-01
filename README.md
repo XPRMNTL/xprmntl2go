@@ -135,9 +135,8 @@ handler := func(w http.ResponseWriter, req *http.Request) {
 #### Template Usage: 
 ```html
 {{ if .IsSet "TestExp"  }}
-<h2>Big Exp</h2>
-<p>The experiment 'Big Exp' is on</p>
-<img src="http://lorempixel.com/400/400" />
+<h2>TestExp</h2>
+<p>The experiment 'TextExp' is on</p>
 {{ end }}
 ```
  
