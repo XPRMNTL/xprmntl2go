@@ -35,7 +35,7 @@ func main() {
 
 	handler := func(w http.ResponseWriter, req *http.Request) {
 		// Initialize the experiments object
-		experiments.Initialize(req, &w);
+		experiments.Initialize(&w, req);
 
 		if experiments.IsSet("TestExp") {
 			// Execute body if experiment is set
