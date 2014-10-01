@@ -7,7 +7,11 @@ This is a GoLang library for the consumption of [XPRMNTL](https://github.com/XPR
 ```go
 package main
 
-import . "github.com/xprmntl/xprmntl2go"
+import (
+	"fmt"
+	"net/http"
+	"github.com/xprmntl/xprmntl2go"
+)
 
 func main() {
 	config := xprmntl2go.Config {
@@ -45,7 +49,6 @@ func main() {
 	http.HandleFunc("/", handler)
 	http.ListenAndServe(":8080", nil)
 }
-
 ```
 
 ### Installation and Importing
@@ -119,6 +122,7 @@ handler := func(w http.ResponseWriter, req *http.Request) {
  ```
  
 ### Usage
+
 #### Server Usage:
 ```go
 handler := func(w http.ResponseWriter, req *http.Request) {
@@ -132,6 +136,7 @@ handler := func(w http.ResponseWriter, req *http.Request) {
   }
 };
 ```
+
 #### Template Usage: 
 ```html
 {{ if .IsSet "TestExp"  }}
