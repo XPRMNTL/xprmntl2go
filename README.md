@@ -66,11 +66,12 @@ import (
 Config Object:
 ```go
 type Config struct {
-	DevKey      string `json:"devKey"`;
+	DevKey      string       `json:"devKey"`;
 	FeatureURL  string;
 	Timeout     int;
-	Experiments []Experiment `json:"experiments"`;
-	Shared      *Config `json:"shared"`;
+	Reference   string        `json:"reference"`;
+	Experiments []*Experiment `json:"experiments"`;
+	Shared      *Config       `json:"shared"`;
 }
 ```
 - `FeatureURL`
