@@ -22,9 +22,9 @@ type Experiment struct {
 }
 
 type Config struct {
-	DevKey      string       `json:"devKey"`;
-	FeatureURL  string;
-	Timeout     int;
+	DevKey      string        `json:"devKey"`;
+	FeatureURL  string				`json:"featureUrl"`;
+	Timeout     int						`json:"timeout"`;
 	Reference   string        `json:"reference"`;
 	Experiments []*Experiment `json:"experiments"`;
 	Shared      *Config       `json:"shared"`;
