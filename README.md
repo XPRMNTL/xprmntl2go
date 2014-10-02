@@ -58,7 +58,7 @@ $ go get github.com/xprmntl/xprmntl2go
 
 ```go
 import (
-  . "github.com/xprmntl/xprmntl2go"
+  "github.com/xprmntl/xprmntl2go"
 )
 ```
 
