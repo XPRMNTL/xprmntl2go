@@ -14,60 +14,52 @@ import (
 	"strconv"
 	"regexp"
 )
-/**
- REQUEST OBJECTS
- */
-/**
- STRUCT: Experiment
- */
+
 type Experiment struct {
 	Name string        `json:"name"`;
 	Description string `json:"description"`;
 	ExpDefault bool    `json:"default"`;
 }
 
-/**
- STRUCT: Config
- */
 type Config struct {
 	DevKey      string       `json:"devKey"`;
 	FeatureURL  string;
 	Timeout     int;
-	Reference   string       `json:"reference"`;
+	Reference   string        `json:"reference"`;
 	Experiments []*Experiment `json:"experiments"`;
-	Shared      *Config      `json:"shared"`;
+	Shared      *Config       `json:"shared"`;
 }
 
-/**
- Config: GET functions
- */
+// Get a pointer to the config devKey
 func (c *Config) getDevKey() *string {
 	return &c.DevKey;
 };
 
+// Get a pointer to the config featureURL
 func (c *Config) getFeatureURL() *string {
 	return &c.FeatureURL;
 };
 
+// Get the config timeout
 func (c *Config) getTimeout() int {
 	return c.Timeout;
 };
 
+// Get a pointer to the config reference
 func (c *Config) getReference() *string {
 	return &c.Reference;
 };
 
+// Get the config experiments list
 func (c *Config) getExperiments() []*Experiment {
 	return c.Experiments;
 };
 
+// Get the shared config
 func (c *Config) getSharedConfig() *Config {
 	return c.Shared;
 };
 
-/**
- STRUCT: FeatureClient
- */
 type FeatureClient struct {
 	DevKey       *string       `json:"devKey"`;
 	FeatureURL   *string       `json:"featureUrl"`;
@@ -77,9 +69,7 @@ type FeatureClient struct {
 	Shared       *Config       `json:"shared"`;
 }
 
-/**
- FeatureClient: Constructors
- */
+// Creates a New FeatureClient object from the provided config object. Will utilize ENV defaults as necessary
 func New(config *Config) (*FeatureClient, error) {
 	if config == nil {
 		return nil, errors.New("XPRMNTL: New(): Cannot register experiments without a config. Please see docs.");
@@ -126,9 +116,7 @@ func New(config *Config) (*FeatureClient, error) {
 	return &FeatureClient{devKey, featureURL, timeout, reference, experiments, shared}, nil;
 }
 
-/**
- FeatureClient: Utility
- */
+// Get a pointer to the name specific experiment in a FeatureClient
 func (c *FeatureClient) getExp(name string) *Experiment {
 	for i := 0; i < len(c.Experiments); i++ {
 		if c.Experiments[i].Name == name { return c.Experiments[i]; }
@@ -136,6 +124,7 @@ func (c *FeatureClient) getExp(name string) *Experiment {
 	return nil;
 }
 
+// Initialize the Feature Client dashboard (if available), if not return empty app that falls back to defaults
 func (c *FeatureClient) Announce() (*AppConfig, error) {
 	var response FeatureClientResponse;
 	response.App.SetDefault(c);
@@ -186,23 +175,11 @@ func (c *FeatureClient) Announce() (*AppConfig, error) {
 	response.App.SetReference(c.Reference);
 	return &response.App, nil;
 }
-/**
- END STRUCT
- */
 
-/**
- RESPONSE OBJECTS
- */
-/**
- STRUCT: FeatureClientResponse
- */
 type FeatureClientResponse struct {
 	App AppConfig
 }
 
-/**
- STRUCT: AppConfig
- */
 type AppConfig struct {
 	Reference   string;
 	Groups      interface {};
@@ -213,12 +190,17 @@ type AppConfig struct {
 	resWriter   *http.ResponseWriter;
 }
 
+// Set the Reference for an app
 func (app *AppConfig) SetReference(reference *string) {
 	app.Reference = *reference;
 }
+
+// Set the default config for an App takes a FeatureClient object
 func (app *AppConfig) SetDefault(config *FeatureClient) {
 	app.Default = config;
 }
+
+// Initialize the app so that it can set and check cookies for specific values
 func (app *AppConfig) Initialize(w *http.ResponseWriter, req *http.Request) {
 	app.req = req;
 	app.resWriter = w;
@@ -254,10 +236,10 @@ func (app *AppConfig) IsSet(experimentName string) bool {
 	if expDefault != nil {
 		return expDefault.ExpDefault;
 	}
-	// TODO: Setup function to check the Default config for experiment before returning false
 	return false;
 };
 
+// Parse the experiment variants and determine if an experiment is on or off.
 func parseExperimentVariants(config [] interface {}, xprmntlConfig *http.Cookie) bool {
 	regex, _ := regexp.Compile(`(\d*)-(\d*)%$`);
 	for i := 0; i < len(config); i++ {
