@@ -2,7 +2,7 @@
 package xprmntl2go
 
 import (
-	"fmt"
+	"log"
 	"net/http"
 	"encoding/json"
 	"bytes"
@@ -144,7 +144,7 @@ func (c *FeatureClient) Announce() (*AppConfig, error) {
 	var timeout time.Duration = time.Duration(c.Timeout) * time.Millisecond;
 	jsonBody, jsonErr := json.Marshal(c);
 	if jsonErr != nil {
-		fmt.Println(jsonErr);
+		log.Print(jsonErr);
 		return &response.App, errors.New("XPRMNTL: Announce(): There was an error building your JSON")
 	}
 
@@ -154,7 +154,7 @@ func (c *FeatureClient) Announce() (*AppConfig, error) {
 
 	req, reqErr := http.NewRequest("POST", url, bytes.NewReader(jsonBody));
 	if reqErr != nil {
-		fmt.Println(reqErr);
+		log.Print(reqErr);
 		return &response.App, errors.New("XPRMNTL: Announce(): There was an error in your request");
 	}
 
@@ -164,23 +164,23 @@ func (c *FeatureClient) Announce() (*AppConfig, error) {
 
 	res, resErr := client.Do(req);
 	if resErr != nil {
-		fmt.Println(resErr);
+		log.Print(resErr);
 		return &response.App, errors.New("XPRMNTL: Announce(): There was an error in the server response")
 	}
 	
 	if (res.StatusCode != 200) {
-		fmt.Println(res);
+		log.Print(res);
 		return &response.App, errors.New("XPRMNTL: Announce(): Server return a non-200 response");
 	}
 	body, bodyReadErr := ioutil.ReadAll(res.Body);
 	defer res.Body.Close();
 	if bodyReadErr != nil {
-		fmt.Println(bodyReadErr);
+		log.Print(bodyReadErr);
 		return &response.App, errors.New("XPRMNTL: Announce(): There was an error in reading the server response body")
 	}
 	marshalErr := json.Unmarshal(body, &response);
 	if marshalErr != nil {
-		fmt.Println(marshalErr);
+		log.Print(marshalErr);
 		return &response.App, errors.New("XPRMNTL: (function) Announce: There was an error in parsing the JSON response")
 	}
 	response.App.SetReference(c.Reference);
@@ -246,7 +246,7 @@ func (app *AppConfig) IsSet(experimentName string) bool {
 				return parseExperimentVariants(app.Experiments[experimentName].([]interface {}), cookie);
 			}
 			default: {
-				fmt.Println(reflect.TypeOf(app.Experiments[experimentName]));
+				log.Print(reflect.TypeOf(app.Experiments[experimentName]));
 			}
 		}
 	}
@@ -271,7 +271,7 @@ func parseExperimentVariants(config [] interface {}, xprmntlConfig *http.Cookie)
 
 			return bucket >= lowerLimit && bucket < upperLimit;
 		} else {
-			fmt.Println("Parsing Group", val);
+			log.Print("Parsing Group", val);
 		}
 	}
 	return true;
